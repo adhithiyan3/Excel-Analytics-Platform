@@ -2,14 +2,12 @@ import express from "express";
 import mongoose from "mongoose";
 import cors from "cors";
 import { config } from "dotenv";
+import { isAuthenticated } from "./middleware/auth.js"; // Import authentication middleware
 
-import userRouter from "./routes/auth.js";
 import authRoutes from "./routes/auth.js";
 import uploadRoutes from "./routes/upload.js";
 import excelFile from "./models/ExcelFile.js";
-import fetch from "node-fetch";
 
-// Load environment variables from .env file
 config({ path: ".env" });
 
 const app = express();
@@ -17,7 +15,7 @@ const app = express();
 // Enable CORS for frontend requests
 app.use(
   cors({
-    origin: "http://localhost:3000", // React frontend URL
+    origin: "http://localhost:5173", // React frontend URL
     credentials: true,
   })
 );
@@ -26,14 +24,14 @@ app.use(
 app.use(express.json());
 
 // Routes
-app.use("/api/user", userRouter);
+// Authentication routes (login, register) do not need isAuthenticated middleware
 app.use("/api/auth", authRoutes);
-app.use("/api/upload", uploadRoutes);
+app.use("/api/upload", isAuthenticated, uploadRoutes); // Protect upload routes with authentication
 
 // DELETE file route
-app.delete("/api/upload/:id", async (req, res) => {
+app.delete("/api/upload/:id", isAuthenticated, async (req, res) => { // Protect delete route
   try {
-    const file = await Upload.findByIdAndDelete(req.params.id);
+    const file = await excelFile.findByIdAndDelete(req.params.id); // Use the correct model
     if (!file) return res.status(404).json({ message: "File not found" });
     res.json({ success: true, message: "File deleted successfully" });
   } catch (error) {
@@ -54,6 +52,6 @@ mongoose
   })
   .then(() => console.log("MongoDb Connected...!"))
   .catch((err) => console.log(err));
-
-const port = 1000;
+ 
+const port = process.env.PORT || 5000;
 app.listen(port, () => console.log(`server is running on port ${port}`));

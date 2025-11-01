@@ -11,6 +11,7 @@ const upload = multer({ storage });
 
 router.post("/", upload.single("excel"), async (req, res) => {
   try {
+    console.log("Received file:", req.file.originalname);
     if (!req.file) return res.status(400).json({ message: "No file uploaded" });
 
     // Parse Excel file buffer

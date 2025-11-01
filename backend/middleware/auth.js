@@ -1,22 +1,40 @@
 import jwt from "jsonwebtoken";
-import { User } from "../models/User.js";
+import User from "../models/User.js";
+import dotenv from "dotenv";
 
-export const isAthunticated = async (req, res, next) => {
-  const token = req.header("Auth");
+dotenv.config();
 
-  //  console.log("checking token",token)
+export const isAuthenticated = async (req, res, next) => {
+  try {
+    const authHeader = req.header("Authorization");
+    console.log("Auth Header:");
 
-  if (!token) {
-    return res.json({ message: "No token found, Login First", success: false });
-  }
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      console.log("No token provided");
+      return res
+        .status(401)
+        .json({ message: "Access denied. No token provided.", success: false });
+    }
 
-  const decoded = jwt.verify(token, process.env.JWT);
+    const token = authHeader.split(" ")[1];
+    console.log("Token:", token);
 
-  const id = decoded.userId;
+   const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-  let user = await User.findById(id);
-  if (!user) return res.json({ message: "User not found", success: false });
+    console.log("Decoded:", decoded);
 
-  req.user = user;
+    // ✅ Fix: support both userId or id
+    const id = decoded.userId || decoded.id;
+
+    const user = await User.findById(id);
+    if (!user) {
+      return res.status(404).json({ message: "User not found", success: false });
+    }
+
+    req.user = user;
     next();
+  } catch (error) {
+    console.error("Auth Error:", error.message);
+    res.status(401).json({ message: "Invalid token.", success: false });
+  }
 };

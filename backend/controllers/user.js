@@ -22,6 +22,7 @@ export const register = async (req, res) => {
 };
 
 export const login = async (req, res) => {
+  console.log("Login request body:", req.body);
   const { email, password } = req.body;
   // if any field is missing then
   if (email == "" || password == "")
@@ -36,10 +37,13 @@ export const login = async (req, res) => {
   if (!validPass)
     return res.status(400).json({ message: "Invalid password", success: false });
 
-  // create token
-  const token = jwt.sign({ userId : user._id }, process.env.JWT ,{
-    expiresIn: "1d",
-  });
+const token = jwt.sign(
+  { userId: user._id, name: user.name, email: user.email },
+  process.env.JWT_SECRET,   // ✅ Correct
+  { expiresIn: "7d" }
+);
+
+
 
 
   // if user is found then send the user data
